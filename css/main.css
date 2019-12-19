@@ -5,3 +5,21 @@
 .hidden {
   display: none !important;
 }
+
+.card {
+  width: 100%;
+  float: left;
+  margin-right: auto;
+  margin-left: auto;
+  border: 1px solid black;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+@media only screen and (min-width: 768px) {
+  .card {
+    width: 25%;
+  }
+}
+
+

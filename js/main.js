@@ -37,18 +37,32 @@ function sortBy(prop) {
   }
 }
 
-
 /**
  * creates filter buttons
  * @param {Array.<JSON>} songs - songs to apply filter to. Should be consistent with the headers in the songs table
  * @param {Array.<string>} filter_keys - types of filter to apply to songs
+ * @param {boolean} asCards - if true, updates html using cards instead of tables
  */
-function activateFilterButtons(songs, filter_keys) {
+function activateFilterButtons(songs, filter_keys, asCards=false) {
+  function updateTable() {
+    let table_for_songs = document.querySelector('div#songs table');
+    let table_headers = table_for_songs.childNodes[0];
+    let song_rows = createTableRows(songs, filter_keys);
+    // remove all rows except header row in table
+    table_for_songs.innerHTML = '';
+    table_for_songs.appendChild(table_headers);
+    song_rows.forEach(row => table_for_songs.appendChild(row));
+  }
+
+  function updateCards() {
+    let song_cards = createCards(songs, filter_keys);
+    let destination = document.querySelector('div#songs');
+    destination.innerHTML = '';
+    song_cards.forEach(card => destination.appendChild(card));
+  }
+
   let nav = document.querySelector('nav#filters');
   nav.classList.remove('hidden');
-
-  let table_for_songs = document.querySelector('div#songs table');
-  let table_headers = table_for_songs.childNodes[0];
 
   for (let key of filter_keys) {
   //  create button
@@ -59,11 +73,7 @@ function activateFilterButtons(songs, filter_keys) {
   //  add listener to button
     button_for_key_filter.addEventListener('click', ev => {
       songs.sort(sortBy(key));
-      let song_rows = createTableRows(songs, filter_keys);
-      // remove all rows except header row in table
-      table_for_songs.innerHTML = '';
-      table_for_songs.appendChild(table_headers);
-      song_rows.forEach(row => table_for_songs.appendChild(row));
+      asCards ? updateCards() : updateTable();
     });
 
   //  add button to nav
@@ -145,7 +155,55 @@ function displaySongs(songs) {
   }
 }
 
+/**
+ * create card element for each data
+ * @param {Array.<JSON>} data - array of values to display in each row
+ * @param {Array.<string>} attributes - keys for each block on each row
+ * @returns {HTMLDivElement[]}
+ */
+function createCards(data, attributes) {
+  if (!data || !attributes) return [];
+
+  return data.map(each_data => {
+    let card = document.createElement('div');
+    card.classList.add('card');
+
+    for (let key of attributes) {
+      let card_attribute = document.createElement('p');
+      card_attribute.innerText = `${key}: ${each_data[key]}`;
+      card.appendChild(card_attribute);
+    }
+
+    return card;
+  })
+}
+
+/**
+ * create and append card elements for songs provided
+ * @param {Array.<JSON>} songs - array of songs to display
+ */
+function displaySongsAsCard(songs) {
+  //  find common keys in list of jsons
+  let common_keys = songs.reduce(
+    (accumulator, value) => arrayIntersection(accumulator, Object.keys(value)),
+    Object.keys(songs[0])
+  );
+
+  // none of json have common keys among them
+  // hard to tell what attributes of songs to display
+  if (common_keys.length < 1) return;
+
+  let song_cards = createCards(songs, common_keys);
+
+  //  display songs in html
+  let destination = document.querySelector('div#songs');
+  destination.innerHTML = '';
+  song_cards.forEach(card => destination.appendChild(card));
+
+  activateFilterButtons(songs, common_keys, true);
+}
+
 window.onload = (function () {
-  getSongs().then(displaySongs)
-    .catch(displayError);
+  // getSongs().then(displaySongs).catch(displayError);
+  getSongs().then(displaySongsAsCard).catch(displayError);
 });
